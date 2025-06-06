@@ -1,5 +1,3 @@
-/* MIT License */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,15 +137,25 @@ void imprimir_conjuntos(Nodo* raiz) {
     
     printf("%d", raiz->dato);
     
+    // Solo abrir paréntesis si tiene al menos un hijo
     if (raiz->izq != NULL || raiz->der != NULL) {
         printf("(");
+        
+        // Imprimir subárbol izquierdo si existe
         if (raiz->izq != NULL) {
             imprimir_conjuntos(raiz->izq);
         }
-        if (raiz->der != NULL) {
+        
+        // Imprimir coma solo si hay ambos hijos
+        if (raiz->izq != NULL && raiz->der != NULL) {
             printf(",");
+        }
+        
+        // Imprimir subárbol derecho si existe
+        if (raiz->der != NULL) {
             imprimir_conjuntos(raiz->der);
         }
+        
         printf(")");
     }
 }
@@ -162,38 +170,62 @@ void imprimir_nivel(Nodo* raiz, int nivel) {
     }
 }
 
-void imprimir_conexiones(Nodo* raiz, char* prefijo, int es_izquierdo) {
+void imprimir_arbol_rec(Nodo *raiz, const char *prefijo, int es_ultimo) {
     if (raiz == NULL) return;
-    
+
+    // Imprimir el prefijo actual
     printf("%s", prefijo);
-    printf(es_izquierdo ? "├── " : "└── ");
+    
+    // Determinar el carácter de conexión
+    printf(es_ultimo ? "└── " : "├── ");
     printf("%d\n", raiz->dato);
 
+    // Preparar el nuevo prefijo para los hijos
     char nuevo_prefijo[1024];
-    strcpy(nuevo_prefijo, prefijo);
-    strcat(nuevo_prefijo, es_izquierdo ? "│   " : "    ");
+    sprintf(nuevo_prefijo, "%s%s", prefijo, es_ultimo ? "    " : "│   ");
 
-    if (raiz->izq != NULL || raiz->der != NULL) {
-        if (raiz->der != NULL) {
-            imprimir_conexiones(raiz->der, nuevo_prefijo, 1);
-        }
-        if (raiz->izq != NULL) {
-            imprimir_conexiones(raiz->izq, nuevo_prefijo, 0);
-        }
+    // Determinar hijos
+    int tiene_izq = (raiz->izq != NULL);
+    int tiene_der = (raiz->der != NULL);
+
+    // Procesar hijos: primero izquierdo, luego derecho
+    if (tiene_izq && tiene_der) {
+        // Ambos hijos: izquierdo no es último, derecho sí
+        imprimir_arbol_rec(raiz->izq, nuevo_prefijo, 0);
+        imprimir_arbol_rec(raiz->der, nuevo_prefijo, 1);
+    } else if (tiene_izq) {
+        // Solo hijo izquierdo: es último
+        imprimir_arbol_rec(raiz->izq, nuevo_prefijo, 1);
+    } else if (tiene_der) {
+        // Solo hijo derecho: es último
+        imprimir_arbol_rec(raiz->der, nuevo_prefijo, 1);
     }
 }
 
 void imprimir_jerarquica(Nodo* raiz) {
     if (raiz == NULL) {
-        printf("Árbol vacío\n");
+        printf("El arbol esta vacio.\n");
         return;
     }
+    
+    // Imprimir la raíz primero
     printf("%d\n", raiz->dato);
-    if (raiz->der != NULL) {
-        imprimir_conexiones(raiz->der, "", 1);
-    }
-    if (raiz->izq != NULL) {
-        imprimir_conexiones(raiz->izq, "", 0);
+    
+    // Prefijo inicial vacío
+    char prefijo[1024] = "";
+    
+    // Determinar hijos de la raíz
+    int tiene_izq = (raiz->izq != NULL);
+    int tiene_der = (raiz->der != NULL);
+
+    // Procesar hijos de la raíz
+    if (tiene_izq && tiene_der) {
+        imprimir_arbol_rec(raiz->izq, prefijo, 0);
+        imprimir_arbol_rec(raiz->der, prefijo, 1);
+    } else if (tiene_izq) {
+        imprimir_arbol_rec(raiz->izq, prefijo, 1);
+    } else if (tiene_der) {
+        imprimir_arbol_rec(raiz->der, prefijo, 1);
     }
 }
 
