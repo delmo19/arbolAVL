@@ -6,333 +6,284 @@
 
 typedef struct Nodo {
     int dato;
-    struct Nodo *izquierda;
-    struct Nodo *derecha;
-    int altura;
+    int fe;
+    struct Nodo *izq;
+    struct Nodo *der;
 } Nodo;
 
-// Prototipos de funciones
-int altura(Nodo *n);
-int max(int a, int b);
-Nodo* crear_nodo(int dato);
-Nodo* rotar_derecha(Nodo *y);
-Nodo* rotar_izquierda(Nodo *x);
-int balance_factor(Nodo *n);
-Nodo* insertar(Nodo *nodo, int dato);
-Nodo* nodo_minimo(Nodo *nodo);
-Nodo* nodo_maximo(Nodo *nodo);
-Nodo* eliminar(Nodo *raiz, int dato);
-Nodo* buscar(Nodo *raiz, int dato);
-void inorden(Nodo *raiz);
-void preorden(Nodo *raiz);
-void postorden(Nodo *raiz);
-void vaciar_arbol(Nodo *raiz);
-void imprimir_arbol_vertical(Nodo *raiz, int nivel, char *prefijo, int es_izquierdo);
-void imprimir_arbol(Nodo *raiz);
-
-// Implementación de funciones
-int altura(Nodo *n) {
-    return n ? n->altura : 0;
-}
-
-int max(int a, int b) {
-    return (a > b) ? a : b;
-}
-
 Nodo* crear_nodo(int dato) {
-    Nodo *nuevo = (Nodo *)malloc(sizeof(Nodo));
+    Nodo* nuevo = (Nodo*)malloc(sizeof(Nodo));
+    if (nuevo == NULL) {
+        printf("Error al asignar memoria.\n");
+        exit(1);
+    }
     nuevo->dato = dato;
-    nuevo->izquierda = NULL;
-    nuevo->derecha = NULL;
-    nuevo->altura = 1;
+    nuevo->fe = 0;
+    nuevo->izq = NULL;
+    nuevo->der = NULL;
     return nuevo;
 }
 
-Nodo* rotar_derecha(Nodo *y) {
-    Nodo *x = y->izquierda;
-    Nodo *T2 = x->derecha;
-
-    x->derecha = y;
-    y->izquierda = T2;
-
-    y->altura = max(altura(y->izquierda), altura(y->derecha)) + 1;
-    x->altura = max(altura(x->izquierda), altura(x->derecha)) + 1;
-
-    return x;
+int altura(Nodo* raiz) {
+    if (raiz == NULL) return 0;
+    int alt_izq = altura(raiz->izq);
+    int alt_der = altura(raiz->der);
+    return 1 + (alt_izq > alt_der ? alt_izq : alt_der);
 }
 
-Nodo* rotar_izquierda(Nodo *x) {
-    Nodo *y = x->derecha;
-    Nodo *T2 = y->izquierda;
-
-    y->izquierda = x;
-    x->derecha = T2;
-
-    x->altura = max(altura(x->izquierda), altura(x->derecha)) + 1;
-    y->altura = max(altura(y->izquierda), altura(y->derecha)) + 1;
-
-    return y;
-}
-
-int balance_factor(Nodo *n) {
-    return n ? altura(n->izquierda) - altura(n->derecha) : 0;
-}
-
-Nodo* insertar(Nodo *nodo, int dato) {
-    if (!nodo) return crear_nodo(dato);
-
-    if (dato < nodo->dato)
-        nodo->izquierda = insertar(nodo->izquierda, dato);
-    else if (dato > nodo->dato)
-        nodo->derecha = insertar(nodo->derecha, dato);
-    else
-        return nodo;
-
-    nodo->altura = 1 + max(altura(nodo->izquierda), altura(nodo->derecha));
-
-    int balance = balance_factor(nodo);
-
-    // Rotación simple derecha
-    if (balance > 1 && dato < nodo->izquierda->dato)
-        return rotar_derecha(nodo);
-
-    // Rotación simple izquierda
-    if (balance < -1 && dato > nodo->derecha->dato)
-        return rotar_izquierda(nodo);
-
-    // Rotación doble izquierda-derecha
-    if (balance > 1 && dato > nodo->izquierda->dato) {
-        nodo->izquierda = rotar_izquierda(nodo->izquierda);
-        return rotar_derecha(nodo);
+void actualizar_fe(Nodo* raiz) {
+    if (raiz != NULL) {
+        raiz->fe = altura(raiz->der) - altura(raiz->izq);
     }
-
-    // Rotación doble derecha-izquierda
-    if (balance < -1 && dato < nodo->derecha->dato) {
-        nodo->derecha = rotar_derecha(nodo->derecha);
-        return rotar_izquierda(nodo);
-    }
-
-    return nodo;
 }
 
-Nodo* nodo_minimo(Nodo *nodo) {
-    Nodo *actual = nodo;
-    while (actual && actual->izquierda)
-        actual = actual->izquierda;
-    return actual;
+Nodo* rotar_izq(Nodo* raiz) {
+    Nodo* nueva_raiz = raiz->der;
+    raiz->der = nueva_raiz->izq;
+    nueva_raiz->izq = raiz;
+    actualizar_fe(raiz);
+    actualizar_fe(nueva_raiz);
+    return nueva_raiz;
 }
 
-Nodo* nodo_maximo(Nodo *nodo) {
-    Nodo *actual = nodo;
-    while (actual && actual->derecha)
-        actual = actual->derecha;
-    return actual;
+Nodo* rotar_der(Nodo* raiz) {
+    Nodo* nueva_raiz = raiz->izq;
+    raiz->izq = nueva_raiz->der;
+    nueva_raiz->der = raiz;
+    actualizar_fe(raiz);
+    actualizar_fe(nueva_raiz);
+    return nueva_raiz;
 }
 
-Nodo* eliminar(Nodo *raiz, int dato) {
-    if (!raiz) return raiz;
+Nodo* rotar_der_izq(Nodo* raiz) {
+    raiz->der = rotar_der(raiz->der);
+    return rotar_izq(raiz);
+}
 
-    if (dato < raiz->dato)
-        raiz->izquierda = eliminar(raiz->izquierda, dato);
-    else if (dato > raiz->dato)
-        raiz->derecha = eliminar(raiz->derecha, dato);
-    else {
-        // Nodo con un hijo o sin hijos
-        if (!raiz->izquierda || !raiz->derecha) {
-            Nodo *temp = raiz->izquierda ? raiz->izquierda : raiz->derecha;
+Nodo* rotar_izq_der(Nodo* raiz) {
+    raiz->izq = rotar_izq(raiz->izq);
+    return rotar_der(raiz);
+}
 
-            // Sin hijos
-            if (!temp) {
-                temp = raiz;
-                raiz = NULL;
-            } 
-            // Un hijo
-            else {
-                *raiz = *temp;
-            }
-            free(temp);
-        } 
-        // Dos hijos
-        else {
-            // Mayor de los menores (máximo en subárbol izquierdo)
-            Nodo *temp = nodo_maximo(raiz->izquierda);
-            raiz->dato = temp->dato;
-            raiz->izquierda = eliminar(raiz->izquierda, temp->dato);
+Nodo* balancear(Nodo* raiz) {
+    if (raiz == NULL) return NULL;
+    
+    actualizar_fe(raiz);
+    
+    if (raiz->fe == -2) {
+        if (raiz->izq->fe <= 0) {
+            return rotar_der(raiz);
+        } else {
+            return rotar_izq_der(raiz);
+        }
+    } else if (raiz->fe == 2) {
+        if (raiz->der->fe >= 0) {
+            return rotar_izq(raiz);
+        } else {
+            return rotar_der_izq(raiz);
         }
     }
-
-    if (!raiz) return raiz;
-
-    raiz->altura = 1 + max(altura(raiz->izquierda), altura(raiz->derecha));
-
-    int balance = balance_factor(raiz);
-
-    // Rotaciones para balancear
-    if (balance > 1) {
-        if (balance_factor(raiz->izquierda) >= 0)
-            return rotar_derecha(raiz);
-        else {
-            raiz->izquierda = rotar_izquierda(raiz->izquierda);
-            return rotar_derecha(raiz);
-        }
-    }
-    if (balance < -1) {
-        if (balance_factor(raiz->derecha) <= 0)
-            return rotar_izquierda(raiz);
-        else {
-            raiz->derecha = rotar_derecha(raiz->derecha);
-            return rotar_izquierda(raiz);
-        }
-    }
-
     return raiz;
 }
 
-Nodo* buscar(Nodo *raiz, int dato) {
-    if (!raiz) return NULL;
-    if (dato < raiz->dato) return buscar(raiz->izquierda, dato);
-    if (dato > raiz->dato) return buscar(raiz->derecha, dato);
-    return raiz;
-}
-
-void inorden(Nodo *raiz) {
-    if (raiz) {
-        inorden(raiz->izquierda);
-        printf("%d ", raiz->dato);
-        inorden(raiz->derecha);
-    }
-}
-
-void preorden(Nodo *raiz) {
-    if (raiz) {
-        printf("%d ", raiz->dato);
-        preorden(raiz->izquierda);
-        preorden(raiz->derecha);
-    }
-}
-
-void postorden(Nodo *raiz) {
-    if (raiz) {
-        postorden(raiz->izquierda);
-        postorden(raiz->derecha);
-        printf("%d ", raiz->dato);
-    }
-}
-
-void vaciar_arbol(Nodo *raiz) {
-    if (raiz) {
-        vaciar_arbol(raiz->izquierda);
-        vaciar_arbol(raiz->derecha);
-        free(raiz);
-    }
-}
-
-void imprimir_arbol_vertical(Nodo *raiz, int nivel, char *prefijo, int es_izquierdo) {
-    if (!raiz) return;
-
-    // Reservar espacio para el nuevo prefijo
-    char nuevo_prefijo[256];
-    strcpy(nuevo_prefijo, prefijo);
-    strcat(nuevo_prefijo, es_izquierdo ? "│   " : "    ");
-
-    // Imprimir subárbol derecho (primero)
-    imprimir_arbol_vertical(raiz->derecha, nivel + 1, nuevo_prefijo, 0);
-
-    // Imprimir el nodo actual (con factor de equilibrio)
-    printf("%s", prefijo);
-    printf("%s", es_izquierdo ? "└── " : "┌── ");
-    printf("%d (%d)\n", raiz->dato, balance_factor(raiz)); // Modificado
-
-    // Actualizar prefijo para subárbol izquierdo
-    strcpy(nuevo_prefijo, prefijo);
-    strcat(nuevo_prefijo, es_izquierdo ? "    " : "│   ");
-
-    // Imprimir subárbol izquierdo
-    imprimir_arbol_vertical(raiz->izquierda, nivel + 1, nuevo_prefijo, 1);
-}
-
-void imprimir_arbol(Nodo *raiz) {
-    if (raiz) {
-        printf("Estructura del árbol AVL:\n");
-        imprimir_arbol_vertical(raiz, 0, "", 0);
+Nodo* insertar(Nodo* raiz, int dato) {
+    if (raiz == NULL) return crear_nodo(dato);
+    
+    if (dato < raiz->dato) {
+        raiz->izq = insertar(raiz->izq, dato);
+    } else if (dato > raiz->dato) {
+        raiz->der = insertar(raiz->der, dato);
     } else {
-        printf("El árbol está vacío.\n");
+        return raiz;
+    }
+    
+    raiz = balancear(raiz);
+    return raiz;
+}
+
+Nodo* encontrar_min(Nodo* raiz) {
+    if (raiz == NULL) return NULL;
+    if (raiz->izq == NULL) return raiz;
+    return encontrar_min(raiz->izq);
+}
+
+Nodo* eliminar(Nodo* raiz, int dato) {
+    if (raiz == NULL) return NULL;
+    
+    if (dato < raiz->dato) {
+        raiz->izq = eliminar(raiz->izq, dato);
+    } else if (dato > raiz->dato) {
+        raiz->der = eliminar(raiz->der, dato);
+    } else {
+        if (raiz->izq == NULL || raiz->der == NULL) {
+            Nodo* temp = raiz->izq ? raiz->izq : raiz->der;
+            if (temp == NULL) {
+                free(raiz);
+                return NULL;
+            } else {
+                *raiz = *temp;
+                free(temp);
+            }
+        } else {
+            Nodo* sucesor = encontrar_min(raiz->der);
+            raiz->dato = sucesor->dato;
+            raiz->der = eliminar(raiz->der, sucesor->dato);
+        }
+    }
+    
+    return balancear(raiz);
+}
+
+void imprimir_conjuntos(Nodo* raiz) {
+    if (raiz == NULL) return;
+    
+    printf("%d", raiz->dato);
+    
+    if (raiz->izq != NULL || raiz->der != NULL) {
+        printf("(");
+        if (raiz->izq != NULL) {
+            imprimir_conjuntos(raiz->izq);
+        }
+        if (raiz->der != NULL) {
+            printf(",");
+            imprimir_conjuntos(raiz->der);
+        }
+        printf(")");
+    }
+}
+
+void imprimir_nivel(Nodo* raiz, int nivel) {
+    if (raiz == NULL) return;
+    if (nivel == 1) {
+        printf("%d\n", raiz->dato);
+    } else if (nivel > 1) {
+        imprimir_nivel(raiz->izq, nivel - 1);
+        imprimir_nivel(raiz->der, nivel - 1);
+    }
+}
+
+void imprimir_jerarquica(Nodo* raiz) {
+    if (raiz == NULL) return;
+    
+    int h = altura(raiz);
+    for (int i = 1; i <= h; i++) {
+        imprimir_nivel(raiz, i);
+    }
+}
+
+void preorden(Nodo* raiz) {
+    if (raiz == NULL) return;
+    printf("%d ", raiz->dato);
+    preorden(raiz->izq);
+    preorden(raiz->der);
+}
+
+void inorden(Nodo* raiz) {
+    if (raiz == NULL) return;
+    inorden(raiz->izq);
+    printf("%d ", raiz->dato);
+    inorden(raiz->der);
+}
+
+void postorden(Nodo* raiz) {
+    if (raiz == NULL) return;
+    postorden(raiz->izq);
+    postorden(raiz->der);
+    printf("%d ", raiz->dato);
+}
+
+Nodo* buscar(Nodo* raiz, int dato) {
+    if (raiz == NULL) return NULL;
+    if (dato == raiz->dato) return raiz;
+    if (dato < raiz->dato) return buscar(raiz->izq, dato);
+    return buscar(raiz->der, dato);
+}
+
+void vaciar_arbol(Nodo* raiz) {
+    if (raiz != NULL) {
+        vaciar_arbol(raiz->izq);
+        vaciar_arbol(raiz->der);
+        free(raiz);
     }
 }
 
 int main(int argc, char *argv[]) {
     Nodo *raiz = NULL;
-    int opcion, dato;
+    Nodo *temp = NULL;
+    int opcion, dato, h;
     
-    // Insertar números pasados como argumentos
     for (int i = 1; i < argc; i++) {
         raiz = insertar(raiz, atoi(argv[i]));
     }
 
     do {
-        printf("\nMenú Árbol AVL:\n");
-        printf("1. Insertar elemento\n");
-        printf("2. Eliminar elemento\n");
-        printf("3. Buscar elemento\n");
-        printf("4. Recorridos (Inorden, Preorden, Postorden)\n");
-        printf("5. Mostrar altura del árbol\n");
-        printf("6. Impresión de conjuntos (Inorden)\n");
-        printf("7. Impresión jerárquica\n");
-        printf("8. Vaciar árbol\n");
-        printf("9. Salir\n");
-        printf("Seleccione una opción: ");
+        printf("\nMENU\n");
+        printf("1. Insertar.\n");
+        printf("2. Eliminar.\n");
+        printf("3. Imprimir.\n");
+        printf("4. Recorridos.\n");
+        printf("5. Altura.\n");
+        printf("6. Busqueda.\n");
+        printf("7. Salir\n\n");
+        printf("Opcion: ");
         scanf("%d", &opcion);
-
-        switch (opcion) {
+        
+        switch(opcion) {
             case 1:
-                printf("Ingrese el número a insertar: ");
+                printf("Dato a insertar: ");
                 scanf("%d", &dato);
                 raiz = insertar(raiz, dato);
                 break;
+                
             case 2:
-                printf("Ingrese el número a eliminar: ");
+                printf("Dato a eliminar: ");
                 scanf("%d", &dato);
                 raiz = eliminar(raiz, dato);
                 break;
+                
             case 3:
-                printf("Ingrese el número a buscar: ");
-                scanf("%d", &dato);
-                Nodo *encontrado = buscar(raiz, dato);
-                printf(encontrado ? "Elemento encontrado\n" : "Elemento no encontrado\n");
+                printf("Impresion de conjuntos: ");
+                imprimir_conjuntos(raiz);
+                printf("\n\nImpresion de arbol jerarquico:\n");
+                imprimir_jerarquica(raiz);
+                printf("\n");
                 break;
+                
             case 4:
-                printf("Inorden: ");
-                inorden(raiz);
-                printf("\nPreorden: ");
+                printf("Preorden: ");
                 preorden(raiz);
+                printf("\nInorden: ");
+                inorden(raiz);
                 printf("\nPostorden: ");
                 postorden(raiz);
                 printf("\n");
                 break;
+                
             case 5:
-                printf("Altura del árbol: %d\n", altura(raiz));
+                h = altura(raiz);
+                printf("Altura del arbol: %d\n", h);
                 break;
+                
             case 6:
-                printf("Elementos en orden (Inorden): ");
-                inorden(raiz);
-                printf("\n");
+                printf("Dato a buscar: ");
+                scanf("%d", &dato);
+                temp = buscar(raiz, dato);
+                if (temp) {
+                    printf("Nodo encontrado: %d\n", temp->dato);
+                } else {
+                    printf("Nodo no encontrado\n");
+                }
                 break;
+                
             case 7:
-                imprimir_arbol(raiz);
-                break;
-            case 8:
                 vaciar_arbol(raiz);
                 raiz = NULL;
-                printf("Árbol vaciado\n");
                 break;
-            case 9:
-                vaciar_arbol(raiz);
-                printf("Saliendo...\n");
-                break;
+                
             default:
-                printf("Opción inválida\n");
+                printf("Opcion invalida\n");
         }
-    } while (opcion != 9);
-
+    } while(opcion != 7);
+    
     return 0;
 }
