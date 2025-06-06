@@ -162,12 +162,38 @@ void imprimir_nivel(Nodo* raiz, int nivel) {
     }
 }
 
-void imprimir_jerarquica(Nodo* raiz) {
+void imprimir_conexiones(Nodo* raiz, char* prefijo, int es_izquierdo) {
     if (raiz == NULL) return;
     
-    int h = altura(raiz);
-    for (int i = 1; i <= h; i++) {
-        imprimir_nivel(raiz, i);
+    printf("%s", prefijo);
+    printf(es_izquierdo ? "├── " : "└── ");
+    printf("%d\n", raiz->dato);
+
+    char nuevo_prefijo[1024];
+    strcpy(nuevo_prefijo, prefijo);
+    strcat(nuevo_prefijo, es_izquierdo ? "│   " : "    ");
+
+    if (raiz->izq != NULL || raiz->der != NULL) {
+        if (raiz->der != NULL) {
+            imprimir_conexiones(raiz->der, nuevo_prefijo, 1);
+        }
+        if (raiz->izq != NULL) {
+            imprimir_conexiones(raiz->izq, nuevo_prefijo, 0);
+        }
+    }
+}
+
+void imprimir_jerarquica(Nodo* raiz) {
+    if (raiz == NULL) {
+        printf("Árbol vacío\n");
+        return;
+    }
+    printf("%d\n", raiz->dato);
+    if (raiz->der != NULL) {
+        imprimir_conexiones(raiz->der, "", 1);
+    }
+    if (raiz->izq != NULL) {
+        imprimir_conexiones(raiz->izq, "", 0);
     }
 }
 
