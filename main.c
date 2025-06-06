@@ -238,10 +238,10 @@ void imprimir_arbol_vertical(Nodo *raiz, int nivel, char *prefijo, int es_izquie
     // Imprimir subárbol derecho (primero)
     imprimir_arbol_vertical(raiz->derecha, nivel + 1, nuevo_prefijo, 0);
 
-    // Imprimir el nodo actual
+    // Imprimir el nodo actual (con factor de equilibrio)
     printf("%s", prefijo);
     printf("%s", es_izquierdo ? "└── " : "┌── ");
-    printf("%d\n", raiz->dato);
+    printf("%d (%d)\n", raiz->dato, balance_factor(raiz)); // Modificado
 
     // Actualizar prefijo para subárbol izquierdo
     strcpy(nuevo_prefijo, prefijo);
